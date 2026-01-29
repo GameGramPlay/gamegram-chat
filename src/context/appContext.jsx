@@ -8,12 +8,19 @@ const MESSAGES_PER_PAGE = 49;
 const CHAT_CHANNEL_NAME = "custom-all-channel";
 const LOCATION_API_URL = "https://api.db-ip.com/v2/free/self";
 const SCROLL_THRESHOLD = 1; // pixels from bottom to consider "at bottom"
+const AUTO_UPDATE_INTERVAL = 1000; // 1 second fallback polling interval for near-instant refresh
+const CONNECTION_CHECK_INTERVAL = 10000; // 10 seconds connection health check
+const MAX_RECONNECT_ATTEMPTS = 5;
 
 const AppContextProvider = ({ children }) => {
   // Refs
   const myChannelRef = useRef(null);
   const hasInitializedRef = useRef(false);
   const scrollRef = useRef();
+  const autoUpdateIntervalRef = useRef(null);
+  const connectionCheckIntervalRef = useRef(null);
+  const lastMessageIdRef = useRef(null);
+  const reconnectAttemptsRef = useRef(0);
 
   // User state
   const [username, setUsername] = useState("");
@@ -31,6 +38,10 @@ const AppContextProvider = ({ children }) => {
   const [isOnBottom, setIsOnBottom] = useState(false);
   const [unviewedMessageCount, setUnviewedMessageCount] = useState(0);
   const [routeHash, setRouteHash] = useState("");
+
+  // Connection state
+  const [connectionStatus, setConnectionStatus] = useState("connecting");
+  const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
 
   // Scroll utilities
   const scrollToBottom = useCallback(() => {
@@ -77,9 +88,75 @@ const AppContextProvider = ({ children }) => {
 
   // Message handlers
   const handleNewMessage = useCallback((payload) => {
-    setMessages((prevMessages) => [payload.new, ...prevMessages]);
+    if (payload.new && payload.new.id) {
+      lastMessageIdRef.current = payload.new.id;
+    }
+    setMessages((prevMessages) => {
+      // Prevent duplicate messages
+      if (prevMessages.some(msg => msg.id === payload.new?.id)) {
+        return prevMessages;
+      }
+      return [payload.new, ...prevMessages];
+    });
     // Trigger effect to check if we should scroll or show notification
     setNewIncomingMessageTrigger(payload.new);
+  }, []);
+
+  // Fetch new messages since last known ID (for auto-update fallback)
+  const fetchNewMessages = useCallback(async () => {
+    if (!lastMessageIdRef.current) return;
+
+    try {
+      const { data, error: fetchError } = await supabase
+        .from("messages")
+        .select()
+        .gt("id", lastMessageIdRef.current)
+        .order("id", { ascending: false });
+
+      if (fetchError) {
+        console.error("Auto-update fetch error:", fetchError.message);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        // Update last message ID
+        lastMessageIdRef.current = Math.max(...data.map(m => m.id));
+
+        setMessages((prevMessages) => {
+          // Filter out any duplicates
+          const existingIds = new Set(prevMessages.map(m => m.id));
+          const newMessages = data.filter(m => !existingIds.has(m.id));
+          if (newMessages.length === 0) return prevMessages;
+
+          // Trigger notification for new messages
+          if (newMessages.length > 0) {
+            setNewIncomingMessageTrigger(newMessages[0]);
+          }
+          return [...newMessages, ...prevMessages];
+        });
+      }
+    } catch (err) {
+      console.error("Auto-update error:", err);
+    }
+  }, []);
+
+  // Start auto-update polling (fallback when realtime is disconnected)
+  const startAutoUpdate = useCallback(() => {
+    if (autoUpdateIntervalRef.current) return;
+
+    autoUpdateIntervalRef.current = setInterval(() => {
+      if (!isRealtimeConnected) {
+        fetchNewMessages();
+      }
+    }, AUTO_UPDATE_INTERVAL);
+  }, [fetchNewMessages, isRealtimeConnected]);
+
+  // Stop auto-update polling
+  const stopAutoUpdate = useCallback(() => {
+    if (autoUpdateIntervalRef.current) {
+      clearInterval(autoUpdateIntervalRef.current);
+      autoUpdateIntervalRef.current = null;
+    }
   }, []);
 
   const getInitialMessages = useCallback(async () => {
@@ -97,28 +174,90 @@ const AppContextProvider = ({ children }) => {
       return;
     }
 
+    // Track the latest message ID for auto-update
+    if (data && data.length > 0) {
+      lastMessageIdRef.current = Math.max(...data.map(m => m.id));
+    }
+
     setIsInitialLoad(true);
     setMessages(data);
   }, [messages.length]);
+
+  // Handle channel subscription status changes
+  const handleSubscriptionStatus = useCallback((status, err) => {
+    setConnectionStatus(status);
+
+    if (status === "SUBSCRIBED") {
+      setIsRealtimeConnected(true);
+      reconnectAttemptsRef.current = 0;
+      setError("");
+    } else if (status === "CLOSED" || status === "CHANNEL_ERROR") {
+      setIsRealtimeConnected(false);
+      if (err) {
+        console.error("Channel error:", err);
+      }
+    } else if (status === "TIMED_OUT") {
+      setIsRealtimeConnected(false);
+      // Attempt reconnection
+      if (reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
+        reconnectAttemptsRef.current += 1;
+        setTimeout(() => {
+          reconnectChannel();
+        }, Math.min(reconnectAttemptsRef.current * 1000, 5000));
+      }
+    }
+  }, []);
+
+  // Reconnect the channel
+  const reconnectChannel = useCallback(() => {
+    if (myChannelRef.current) {
+      supabase.removeChannel(myChannelRef.current);
+      myChannelRef.current = null;
+    }
+    createChannelSubscription();
+  }, []);
 
   const createChannelSubscription = useCallback(() => {
     if (myChannelRef.current) return;
 
     myChannelRef.current = supabase
-      .channel(CHAT_CHANNEL_NAME)
+      .channel(CHAT_CHANNEL_NAME, {
+        config: {
+          broadcast: { self: true },
+          presence: { key: '' },
+        },
+      })
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "messages" },
+        { event: "INSERT", schema: "public", table: "messages" },
         handleNewMessage
       )
-      .subscribe();
-  }, [handleNewMessage]);
+      .subscribe((status, err) => {
+        handleSubscriptionStatus(status, err);
+      });
+  }, [handleNewMessage, handleSubscriptionStatus]);
 
   const getMessagesAndSubscribe = useCallback(async () => {
     setError("");
     await getInitialMessages();
     createChannelSubscription();
-  }, [getInitialMessages, createChannelSubscription]);
+    startAutoUpdate();
+  }, [getInitialMessages, createChannelSubscription, startAutoUpdate]);
+
+  // Connection health check
+  const checkConnectionHealth = useCallback(() => {
+    if (myChannelRef.current) {
+      const state = myChannelRef.current.state;
+      if (state !== "joined" && state !== "joining") {
+        setIsRealtimeConnected(false);
+        setConnectionStatus("disconnected");
+        // Trigger reconnection if not actively trying
+        if (reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
+          reconnectChannel();
+        }
+      }
+    }
+  }, [reconnectChannel]);
 
   // Initialize app: auth, messages, location, and subscriptions
   useEffect(() => {
@@ -149,6 +288,31 @@ const AppContextProvider = ({ children }) => {
       initializeUser(session);
     });
 
+    // Start connection health check interval
+    connectionCheckIntervalRef.current = setInterval(checkConnectionHealth, CONNECTION_CHECK_INTERVAL);
+
+    // Handle visibility change - reconnect when tab becomes visible
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        // Fetch any missed messages when returning to tab
+        fetchNewMessages();
+        // Check and reconnect if needed
+        if (!isRealtimeConnected) {
+          reconnectChannel();
+        }
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    // Handle online/offline events
+    const handleOnline = () => {
+      fetchNewMessages();
+      if (!isRealtimeConnected) {
+        reconnectChannel();
+      }
+    };
+    window.addEventListener("online", handleOnline);
+
     return () => {
       // Cleanup: remove channel subscription
       if (myChannelRef.current) {
@@ -158,6 +322,17 @@ const AppContextProvider = ({ children }) => {
 
       authSubscription.unsubscribe();
       hasInitializedRef.current = false;
+
+      // Cleanup intervals
+      stopAutoUpdate();
+      if (connectionCheckIntervalRef.current) {
+        clearInterval(connectionCheckIntervalRef.current);
+        connectionCheckIntervalRef.current = null;
+      }
+
+      // Cleanup event listeners
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("online", handleOnline);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -222,6 +397,9 @@ const AppContextProvider = ({ children }) => {
         country: countryCode,
         unviewedMessageCount,
         session,
+        connectionStatus,
+        isRealtimeConnected,
+        refreshMessages: fetchNewMessages,
       }}
     >
       {children}
