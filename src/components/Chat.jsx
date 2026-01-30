@@ -25,15 +25,16 @@ export default function Chat() {
   return (
     <Container maxW="600px" pb="20px">
       <Box
-        bg="#ffffff"          // fixed light background
-        p="5"
+        bg="gray.800"             // dark Discord-style background
+        p="4"
         overflowY="auto"
-        borderRadius="10px"
-        border="1px solid #e2e8f0"
+        borderRadius="md"
+        border="1px solid #2f3136" // subtle dark border
         height={height}
         onScroll={onScroll}
         ref={scrollRef}
         position="relative"
+        boxShadow="lg"
       >
         <Messages />
 
@@ -47,28 +48,28 @@ export default function Chat() {
           >
             <Flex
               align="center"
-              bg="#1d9bf0"                // fixed blue for jump button
+              bg="#5865f2"               // Discord blue
               color="white"
               px="3"
               py="1.5"
               borderRadius="full"
               cursor="pointer"
               boxShadow="md"
-              _hover={{ filter: "brightness(1.1)" }}
+              _hover={{ filter: "brightness(1.15)" }}
               transition="all 0.15s ease"
               onClick={scrollToBottom}
             >
               {unviewedMessageCount > 0 && (
                 <Badge
                   mr="2"
-                  colorScheme="green"
+                  colorScheme="red"
                   borderRadius="full"
                   fontSize="0.75em"
                 >
                   {unviewedMessageCount}
                 </Badge>
               )}
-              <Icon as={BsChevronDoubleDown} />
+              <Icon as={BsChevronDoubleDown} boxSize={5} />
             </Flex>
           </Flex>
         )}
