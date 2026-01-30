@@ -1,30 +1,24 @@
-import { Box, Flex, Text, Image, Icon, keyframes } from "@chakra-ui/react";
+import { Box, Flex, Text, Image, Icon } from "@chakra-ui/react";
+import { keyframes } from "@emotion/react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { MdVerified } from "react-icons/md";
+import { emojiMap } from "/ui/emojiMap"; // <- import the map
 
 dayjs.extend(relativeTime);
 
-// Shortcode map for Discord-like emojis
-const EMOJI_MAP = {
-  smile: "😄",
-  heart: "❤️",
-  thumbsup: "👍",
-  wink: "😉",
-  fire: "🔥",
-  star: "⭐",
-};
-
-// Convert :emoji: shortcodes to actual Unicode emojis
-function parseShortcodes(text) {
-  return text.replace(/:([a-zA-Z0-9_+-]+):/g, (_, name) => EMOJI_MAP[name] || `:${name}:`);
-}
-
-// Fade in + slide animation for messages
 const fadeInSlide = keyframes`
   0% { opacity: 0; transform: translateY(10px); }
   100% { opacity: 1; transform: translateY(0); }
 `;
+
+const parseEmojis = (text) => {
+  if (!text) return "";
+  // Replace :emoji_name: with Unicode
+  return text.replace(/:([a-zA-Z0-9_+-]+):/g, (_, code) => {
+    return emojiMap[code] || `:${code}:`;
+  });
+};
 
 export default function Message({ message, isYou, showUsername = true }) {
   const countryCode =
@@ -32,7 +26,7 @@ export default function Message({ message, isYou, showUsername = true }) {
       ? message.country.toLowerCase()
       : "";
 
-  const bubbleBg = isYou ? "#3ba55d" : "#36393f"; // green for self, dark gray for others
+  const bubbleBg = isYou ? "#3ba55d" : "#36393f";
   const textColor = isYou ? "white" : "gray.200";
 
   return (
@@ -104,9 +98,9 @@ export default function Message({ message, isYou, showUsername = true }) {
           </Flex>
         )}
 
-        {/* Message text with emojis */}
+        {/* Message text with full emoji support */}
         <Text fontSize="md" whiteSpace="pre-wrap" wordBreak="break-word">
-          {parseShortcodes(message.text)}
+          {parseEmojis(message.text)}
         </Text>
 
         {/* Timestamp */}
