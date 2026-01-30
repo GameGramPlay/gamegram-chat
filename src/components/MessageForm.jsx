@@ -4,11 +4,19 @@ import { BiSend } from "react-icons/bi";
 import { toaster } from "@/components/ui/toaster";
 import { useAppContext } from "../context/appContext";
 import supabase from "../supabaseClient";
+import { emojiMap } from "../ui/emojiMap"; // <- import your map
 
 export default function MessageForm() {
   const { username, country, session } = useAppContext();
   const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
+
+  // Convert :emoji_name: -> emoji in real-time
+  const parseEmojis = (text) => {
+    return text.replace(/:([a-zA-Z0-9_+-]+):/g, (match, p1) => {
+      return emojiMap[p1] || match;
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,7 +28,7 @@ export default function MessageForm() {
     try {
       const { error } = await supabase.from("messages").insert([
         {
-          text: trimmed,
+          text: parseEmojis(trimmed), // save with emojis
           username,
           country,
           is_authenticated: !!session,
@@ -55,6 +63,12 @@ export default function MessageForm() {
     }
   };
 
+  // Real-time inline parsing for display in input (optional: for preview)
+  const handleChange = (e) => {
+    const value = e.target.value;
+    setMessage(value);
+  };
+
   return (
     <Box bg="#2f3136" py="10px" px="4">
       <Container maxW="600px">
@@ -70,7 +84,7 @@ export default function MessageForm() {
               name="message"
               placeholder="Message #general"
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={handleChange}
               onKeyDown={handleKeyDown}
               bg="transparent"
               border="none"
