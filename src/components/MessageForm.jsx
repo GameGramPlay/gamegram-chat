@@ -14,7 +14,6 @@ import { toaster } from "@/components/ui/toaster";
 import { useAppContext } from "../context/appContext";
 import supabase from "../supabaseClient";
 import { emojiMap } from "./ui/emojiMap";
-import { useAppContext } from "../context/appContext";
 
 export default function MessageForm() {
   const { username, country, session, currentChannel } = useAppContext();
@@ -148,7 +147,7 @@ export default function MessageForm() {
             <Box flex="1" position="relative">
               <Input
                 name="message"
-                placeholder="Message #general"
+                placeholder={`Message ${currentChannel ? `#${currentChannel.name}` : "#general"}`}
                 value={message}
                 onChange={handleChange}
                 onKeyDown={handleKeyDown}
@@ -174,7 +173,7 @@ export default function MessageForm() {
                   ref={autocompleteRef}
                   maxH="200px"
                   overflowY="auto"
-                  width="200px"
+                  width="220px"
                 >
                   <VStack spacing="0" align="stretch">
                     {matchedEmojis.map((name, idx) => (
