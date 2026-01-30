@@ -1,11 +1,4 @@
-import {
-  Badge,
-  Box,
-  Container,
-  Flex,
-  Icon,
-  useColorModeValue,
-} from "@chakra-ui/react";
+import {Badge,Box,Container,Flex,Icon,useColorModeValue} from "@chakra-ui/react";
 import { useEffect, useRef, useState } from "react";
 import { BsChevronDoubleDown } from "react-icons/bs";
 import { useAppContext } from "../context/appContext";
