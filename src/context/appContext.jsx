@@ -8,7 +8,7 @@ const MESSAGES_PER_PAGE = 50;
 const CHAT_CHANNEL_NAME = "custom-all-channel";
 const LOCATION_API_URL = "https://api.db-ip.com/v2/free/self";
 const SCROLL_THRESHOLD = 5;
-const AUTO_UPDATE_INTERVAL = 1000;
+const AUTO_UPDATE_INTERVAL = 2000;
 const CONNECTION_CHECK_INTERVAL = 10000;
 const MAX_RECONNECT_ATTEMPTS = 5;
 
