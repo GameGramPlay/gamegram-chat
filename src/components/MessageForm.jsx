@@ -1,17 +1,109 @@
-import { useState } from "react";
-import { Input, IconButton, Box, Container, Flex, Text } from "@chakra-ui/react";
+import { useState, useRef, useEffect } from "react";
+import {
+  Input,
+  IconButton,
+  Box,
+  Container,
+  Flex,
+  Text,
+  VStack,
+  List,
+  ListItem,
+  useOutsideClick,
+} from "@chakra-ui/react";
 import { BiSend } from "react-icons/bi";
 import { toaster } from "@/components/ui/toaster";
 import { useAppContext } from "../context/appContext";
 import supabase from "../supabaseClient";
-import emojiMap from "./ui/emojiMap.js";
+import { emojiMap } from "../ui/emojiMap";
 
 export default function MessageForm() {
   const { username, country, session } = useAppContext();
   const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
 
-  // Convert :emoji_name: -> emoji in real-time
+  // For autocomplete
+  const [emojiQuery, setEmojiQuery] = useState("");
+  const [matchedEmojis, setMatchedEmojis] = useState([]);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const autocompleteRef = useRef(null);
+  const inputRef = useRef(null);
+
+  // Detect :emoji: in the current word for live autocomplete
+  const detectEmojiQuery = (text, cursorPos) => {
+    const leftText = text.slice(0, cursorPos);
+    const match = leftText.match(/:([a-zA-Z0-9_+-]*)$/);
+    return match ? match[1] : "";
+  };
+
+  const handleChange = (e) => {
+    const value = e.target.value;
+    setMessage(value);
+
+    const cursorPos = e.target.selectionStart;
+    const query = detectEmojiQuery(value, cursorPos);
+    setEmojiQuery(query);
+
+    if (query.length > 0) {
+      const matches = Object.keys(emojiMap).filter((name) =>
+        name.startsWith(query)
+      );
+      setMatchedEmojis(matches);
+      setSelectedIndex(0);
+    } else {
+      setMatchedEmojis([]);
+    }
+  };
+
+  const insertEmoji = (emojiName) => {
+    const cursorPos = inputRef.current.selectionStart;
+    const leftText = message.slice(0, cursorPos);
+    const rightText = message.slice(cursorPos);
+
+    // Replace the :query: with emoji
+    const newLeft = leftText.replace(/:([a-zA-Z0-9_+-]*)$/, emojiMap[emojiName]);
+    setMessage(newLeft + rightText);
+    setEmojiQuery("");
+    setMatchedEmojis([]);
+
+    // Move cursor after inserted emoji
+    setTimeout(() => {
+      inputRef.current.selectionStart = inputRef.current.selectionEnd =
+        newLeft.length;
+      inputRef.current.focus();
+    }, 0);
+  };
+
+  const handleKeyDown = (e) => {
+    if (matchedEmojis.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setSelectedIndex((prev) => (prev + 1) % matchedEmojis.length);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setSelectedIndex(
+          (prev) => (prev - 1 + matchedEmojis.length) % matchedEmojis.length
+        );
+      } else if (e.key === "Enter") {
+        if (emojiQuery.length > 0) {
+          e.preventDefault();
+          insertEmoji(matchedEmojis[selectedIndex]);
+          return;
+        }
+      }
+    }
+
+    if (e.key === "Enter" && !e.shiftKey && emojiQuery.length === 0) {
+      handleSubmit(e);
+    }
+  };
+
+  // Click outside to close autocomplete
+  useOutsideClick({
+    ref: autocompleteRef,
+    handler: () => setMatchedEmojis([]),
+  });
+
   const parseEmojis = (text) => {
     return text.replace(/:([a-zA-Z0-9_+-]+):/g, (match, p1) => {
       return emojiMap[p1] || match;
@@ -28,7 +120,7 @@ export default function MessageForm() {
     try {
       const { error } = await supabase.from("messages").insert([
         {
-          text: parseEmojis(trimmed), // save with emojis
+          text: parseEmojis(trimmed),
           username,
           country,
           is_authenticated: !!session,
@@ -53,24 +145,13 @@ export default function MessageForm() {
       console.error("Error sending message:", err);
     } finally {
       setIsSending(false);
+      setMatchedEmojis([]);
+      setEmojiQuery("");
     }
-  };
-
-  // Enter to send, Shift+Enter for newline
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      handleSubmit(e);
-    }
-  };
-
-  // Real-time inline parsing for display in input (optional: for preview)
-  const handleChange = (e) => {
-    const value = e.target.value;
-    setMessage(value);
   };
 
   return (
-    <Box bg="#2f3136" py="10px" px="4">
+    <Box bg="#2f3136" py="10px" px="4" position="relative">
       <Container maxW="600px">
         <form onSubmit={handleSubmit} autoComplete="off">
           <Flex
@@ -80,22 +161,61 @@ export default function MessageForm() {
             py="2"
             align="center"
           >
-            <Input
-              name="message"
-              placeholder="Message #general"
-              value={message}
-              onChange={handleChange}
-              onKeyDown={handleKeyDown}
-              bg="transparent"
-              border="none"
-              color="white"
-              _placeholder={{ color: "#b9bbbe" }}
-              resize="none"
-              flex="1"
-              fontSize="14px"
-              mr="2"
-              autoFocus
-            />
+            <Box flex="1" position="relative">
+              <Input
+                name="message"
+                placeholder="Message #general"
+                value={message}
+                onChange={handleChange}
+                onKeyDown={handleKeyDown}
+                bg="transparent"
+                border="none"
+                color="white"
+                _placeholder={{ color: "#b9bbbe" }}
+                resize="none"
+                fontSize="14px"
+                autoFocus
+                ref={inputRef}
+              />
+
+              {matchedEmojis.length > 0 && (
+                <Box
+                  position="absolute"
+                  bottom="100%"
+                  left="0"
+                  bg="#202225"
+                  borderRadius="8px"
+                  boxShadow="0 0 5px rgba(0,0,0,0.5)"
+                  mt="1"
+                  zIndex={50}
+                  ref={autocompleteRef}
+                  maxH="200px"
+                  overflowY="auto"
+                  width="200px"
+                >
+                  <VStack spacing="0" align="stretch">
+                    {matchedEmojis.map((name, idx) => (
+                      <ListItem
+                        key={name}
+                        px="3"
+                        py="1"
+                        bg={idx === selectedIndex ? "#5865f2" : "transparent"}
+                        color={idx === selectedIndex ? "white" : "gray.200"}
+                        cursor="pointer"
+                        _hover={{ bg: "#5865f2", color: "white" }}
+                        onMouseDown={(e) => {
+                          e.preventDefault(); // prevent blur
+                          insertEmoji(name);
+                        }}
+                      >
+                        {emojiMap[name]} {name}
+                      </ListItem>
+                    ))}
+                  </VStack>
+                </Box>
+              )}
+            </Box>
+
             <IconButton
               aria-label="Send message"
               icon={<BiSend />}
