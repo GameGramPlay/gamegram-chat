@@ -9,8 +9,8 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
     params: {
       eventsPerSecond: 20, // 5x lower than before
     },
-    heartbeatIntervalMs: 30000, // ping server every 30s instead of 15s
-    reconnectAfterMs: (tries) => Math.min(tries * 500, 5000), // slower reconnect
+    heartbeatIntervalMs: 15000, // ping server every 30s instead of 15s
+    reconnectAfterMs: (tries) => Math.min(tries * 100, 3000), // slower reconnect
   },
   global: {
     headers: {
