@@ -1,11 +1,9 @@
 # Full-stack real-time chat
-
-[![Netlify Status](https://api.netlify.com/api/v1/badges/38b6f457-50d2-42ac-b9a8-9ca962febebd/deploy-status)](https://app.netlify.com/sites/random-chat/deploys)
+# GameGram version
 
 - **Data:** PostgeSQL managed by [Supabase](https://supabase.io/) [@supabase_io](https://twitter.com/supabase_io) (awsome real-time API).
 - **Front-end**: React + Vite
 - **UI library**: [chakra-ui](https://chakra-ui.com/) [@chakra_ui](https://twitter.com/chakra_ui)
-- **Hosting**: [Netlify](https://www.netlify.com/)
 - Country flags from [Flagpedia](https://flagpedia.net)
 
 ## Install
