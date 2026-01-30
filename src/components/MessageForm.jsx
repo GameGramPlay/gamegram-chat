@@ -1,219 +1,150 @@
-import { useState, useRef } from "react";
-import {
-  Input,
-  IconButton,
-  Box,
-  Flex,
-  Text,
-  VStack,
-  ListItem,
-} from "@chakra-ui/react";
-import { useOutsideClick } from "@chakra-ui/hooks";
-import { BiSend } from "react-icons/bi";
-import { toaster } from "@/components/ui/toaster";
+import { Box, Flex, Icon, Text, VStack, Badge } from "@chakra-ui/react";
+import { BsChevronDoubleDown } from "react-icons/bs";
+import { useEffect, useState } from "react";
 import { useAppContext } from "../context/appContext";
-import supabase from "../supabaseClient";
-import { emojiMap } from "./ui/emojiMap";
+import Messages from "./Messages";
+import MessageForm from "./MessageForm";
 
-export default function MessageForm() {
-  const { username, country, session } = useAppContext();
-  const [message, setMessage] = useState("");
-  const [isSending, setIsSending] = useState(false);
+export default function ChatContainer() {
+  const [height, setHeight] = useState(window.innerHeight - 60); // adjust for header/menu
+  const {
+    scrollRef,
+    onScroll,
+    scrollToBottom,
+    isOnBottom,
+    unviewedMessageCount,
+    currentChannel,
+  } = useAppContext();
 
-  const [emojiQuery, setEmojiQuery] = useState("");
-  const [matchedEmojis, setMatchedEmojis] = useState([]);
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const autocompleteRef = useRef(null);
-  const inputRef = useRef(null);
-
-  const detectEmojiQuery = (text, cursorPos) => {
-    const leftText = text.slice(0, cursorPos);
-    const match = leftText.match(/:([a-zA-Z0-9_+-]*)$/);
-    return match ? match[1] : "";
-  };
-
-  const handleChange = (e) => {
-    const value = e.target.value;
-    setMessage(value);
-
-    const cursorPos = e.target.selectionStart;
-    const query = detectEmojiQuery(value, cursorPos);
-    setEmojiQuery(query);
-
-    if (query.length > 0) {
-      const matches = Object.keys(emojiMap).filter((name) =>
-        name.startsWith(query)
-      );
-      setMatchedEmojis(matches);
-      setSelectedIndex(0);
-    } else {
-      setMatchedEmojis([]);
-    }
-  };
-
-  const insertEmoji = (emojiName) => {
-    const cursorPos = inputRef.current.selectionStart;
-    const leftText = message.slice(0, cursorPos);
-    const rightText = message.slice(cursorPos);
-
-    const newLeft = leftText.replace(/:([a-zA-Z0-9_+-]*)$/, emojiMap[emojiName]);
-    setMessage(newLeft + rightText);
-    setEmojiQuery("");
-    setMatchedEmojis([]);
-
-    setTimeout(() => {
-      inputRef.current.selectionStart = inputRef.current.selectionEnd = newLeft.length;
-      inputRef.current.focus();
-    }, 0);
-  };
-
-  const handleKeyDown = (e) => {
-    if (matchedEmojis.length > 0) {
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setSelectedIndex((prev) => (prev + 1) % matchedEmojis.length);
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setSelectedIndex((prev) => (prev - 1 + matchedEmojis.length) % matchedEmojis.length);
-      } else if (e.key === "Enter") {
-        if (emojiQuery.length > 0) {
-          e.preventDefault();
-          insertEmoji(matchedEmojis[selectedIndex]);
-          return;
-        }
-      }
-    }
-
-    if (e.key === "Enter" && !e.shiftKey && emojiQuery.length === 0) {
-      handleSubmit(e);
-    }
-  };
-
-  useOutsideClick({
-    ref: autocompleteRef,
-    handler: () => setMatchedEmojis([]),
-  });
-
-  const parseEmojis = (text) => {
-    return text.replace(/:([a-zA-Z0-9_+-]+):/g, (match, p1) => emojiMap[p1] || match);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const trimmed = message.trim();
-    if (!trimmed) return;
-
-    setIsSending(true);
-
-    try {
-      const { error } = await supabase.from("messages").insert([
-        {
-          text: parseEmojis(trimmed),
-          username,
-          country,
-          is_authenticated: !!session,
-        },
-      ]);
-
-      if (error) {
-        toaster.create({
-          title: "Error sending",
-          description: error.message,
-          status: "error",
-          duration: 9000,
-          isClosable: true,
-          color: "white",
-          background: "#ef4444",
-        });
-        return;
-      }
-
-      setMessage("");
-    } catch (err) {
-      console.error("Error sending message:", err);
-    } finally {
-      setIsSending(false);
-      setMatchedEmojis([]);
-      setEmojiQuery("");
-    }
-  };
+  useEffect(() => {
+    const handleResize = () => setHeight(window.innerHeight - 60);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   return (
-    <Box bg="#2f3136" px="4" py="2" flexShrink={0}>
-      <form onSubmit={handleSubmit} autoComplete="off">
-        <Flex bg="#40444b" borderRadius="20px" px="3" py="2" align="center">
-          <Box flex="1" position="relative">
-            <Input
-              name="message"
-              placeholder="Message #general"
-              value={message}
-              onChange={handleChange}
-              onKeyDown={handleKeyDown}
-              bg="transparent"
-              border="none"
-              color="white"
-              _placeholder={{ color: "#b9bbbe" }}
-              fontSize="14px"
-              autoFocus
-              ref={inputRef}
-            />
-
-            {matchedEmojis.length > 0 && (
-              <Box
-                position="absolute"
-                bottom="100%"
-                left="0"
-                bg="#202225"
-                borderRadius="8px"
-                boxShadow="0 0 5px rgba(0,0,0,0.5)"
-                mt="1"
-                zIndex={50}
-                ref={autocompleteRef}
-                maxH="200px"
-                overflowY="auto"
-                width="200px"
-              >
-                <VStack spacing="0" align="stretch">
-                  {matchedEmojis.map((name, idx) => (
-                    <ListItem
-                      key={name}
-                      px="3"
-                      py="1"
-                      bg={idx === selectedIndex ? "#5865f2" : "transparent"}
-                      color={idx === selectedIndex ? "white" : "gray.200"}
-                      cursor="pointer"
-                      _hover={{ bg: "#5865f2", color: "white" }}
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        insertEmoji(name);
-                      }}
-                    >
-                      {emojiMap[name]} {name}
-                    </ListItem>
-                  ))}
-                </VStack>
-              </Box>
-            )}
+    <Flex w="100%" h={`${height}px`} bg="#36393f">
+      {/* Sidebar placeholder */}
+      <Box
+        w="220px"
+        bg="#202225"
+        borderRight="1px solid #2f3136"
+        p="4"
+        display={{ base: "none", md: "block" }}
+      >
+        <Text color="gray.300" fontWeight="bold" mb="4">
+          Channels
+        </Text>
+        <VStack spacing="2" align="stretch">
+          <Box px="2" py="1" borderRadius="md" _hover={{ bg: "#2f3136" }}>
+            # general
           </Box>
+          <Box px="2" py="1" borderRadius="md" _hover={{ bg: "#2f3136" }}>
+            # random
+          </Box>
+        </VStack>
+      </Box>
 
-          <IconButton
-            aria-label="Send message"
-            icon={<BiSend />}
-            type="submit"
-            size="md"
-            isLoading={isSending}
-            disabled={!message.trim()}
-            bg="#5865f2"
-            _hover={{ bg: "#4752c4" }}
-            color="white"
-            borderRadius="full"
-          />
+      {/* Main chat area */}
+      <Flex flex="1" direction="column" bg="#2f3136" borderRadius="md">
+        {/* Header */}
+        <Flex
+          align="center"
+          justify="space-between"
+          bg="#2f3136"
+          p="3"
+          borderBottom="1px solid #202225"
+        >
+          <Text fontWeight="bold" color="white">
+            {currentChannel ? `# ${currentChannel}` : "# general"}
+          </Text>
+          <Text color="gray.400" fontSize="sm">
+            12 online
+          </Text>
         </Flex>
-      </form>
 
-      <Text fontSize="10px" color="#b9bbbe" mt="2">
-        ⚠️ Do not share sensitive info in this public chat room
-      </Text>
-    </Box>
+        {/* Messages scrollable area */}
+        <Box
+          flex="1"
+          overflowY="auto"
+          position="relative"
+          ref={scrollRef}
+          onScroll={onScroll}
+          px="4"
+          py="2"
+          sx={{ scrollBehavior: "smooth" }}
+        >
+          {/* Top gradient */}
+          <Box
+            position="sticky"
+            top="0"
+            height="24px"
+            bg="linear-gradient(to bottom, #2f3136, transparent)"
+            pointerEvents="none"
+            zIndex={5}
+          />
+
+          <Messages />
+
+          {/* Bottom gradient */}
+          <Box
+            position="sticky"
+            bottom="0"
+            height="24px"
+            bg="linear-gradient(to top, #2f3136, transparent)"
+            pointerEvents="none"
+            zIndex={5}
+          />
+
+          {/* Scroll-to-bottom button */}
+          {!isOnBottom && (
+            <Flex
+              position="sticky"
+              bottom="16px"
+              justify="flex-end"
+              width="100%"
+              zIndex={10}
+              pointerEvents="none"
+            >
+              <Flex
+                align="center"
+                bg="#5865f2"
+                color="white"
+                px="3"
+                py="1.5"
+                borderRadius="full"
+                cursor="pointer"
+                boxShadow="md"
+                pointerEvents="auto"
+                _hover={{
+                  transform: "scale(1.05)",
+                  filter: "brightness(1.15)",
+                }}
+                transition="all 0.2s ease"
+                onClick={scrollToBottom}
+              >
+                {unviewedMessageCount > 0 && (
+                  <Badge
+                    mr="2"
+                    colorScheme="red"
+                    borderRadius="full"
+                    fontSize="0.75em"
+                    transition="all 0.2s ease"
+                  >
+                    {unviewedMessageCount}
+                  </Badge>
+                )}
+                <Icon as={BsChevronDoubleDown} boxSize={5} />
+              </Flex>
+            </Flex>
+          )}
+        </Box>
+
+        {/* Message form at the bottom */}
+        <Box px="4" py="2" flexShrink={0} bg="#2f3136">
+          <MessageForm />
+        </Box>
+      </Flex>
+    </Flex>
   );
 }
