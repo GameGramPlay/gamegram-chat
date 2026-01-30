@@ -9,7 +9,6 @@ import {
   HStack,
   Divider,
   IconButton,
-  Collapse,
   useBreakpointValue,
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
@@ -118,9 +117,9 @@ export default function Chat() {
               />
             </HStack>
 
-            <Collapse in={channelsOpen} animateOpacity>
+            {/* Simple conditional render instead of Collapse */}
+            {channelsOpen && (
               <VStack spacing="1" align="stretch" mb="4">
-                {/* Render channels from context (fallback to placeholder) */}
                 {(channels.length ? channels : [{ id: "placeholder", name: "general" }]).map((c) => (
                   <Box
                     key={c.id}
@@ -136,7 +135,7 @@ export default function Chat() {
                   </Box>
                 ))}
               </VStack>
-            </Collapse>
+            )}
 
             <Divider borderColor="#26282b" />
 
