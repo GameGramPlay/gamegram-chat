@@ -34,13 +34,15 @@ export default function Chat() {
   // Responsive: hide left sidebar on small screens
   const showLeftSidebar = useBreakpointValue({ base: false, md: true });
 
-  // App context (names chosen to match your provider)
+  // App context
   const {
     scrollRef,
     onScroll,
     scrollToBottom,
     isOnBottom,
     unviewedCount,
+    channels = [],
+    setCurrentChannel,
     currentChannel,
     typingUsers = [],
     onlineUsers = [],
@@ -118,15 +120,21 @@ export default function Chat() {
 
             <Collapse in={channelsOpen} animateOpacity>
               <VStack spacing="1" align="stretch" mb="4">
-                <Box px="2" py="2" borderRadius="md" _hover={{ bg: "#2f3136" }}>
-                  # general
-                </Box>
-                <Box px="2" py="2" borderRadius="md" _hover={{ bg: "#2f3136" }}>
-                  # random
-                </Box>
-                <Box px="2" py="2" borderRadius="md" _hover={{ bg: "#2f3136" }}>
-                  # dev
-                </Box>
+                {/* Render channels from context (fallback to placeholder) */}
+                {(channels.length ? channels : [{ id: "placeholder", name: "general" }]).map((c) => (
+                  <Box
+                    key={c.id}
+                    px="2"
+                    py="2"
+                    borderRadius="md"
+                    bg={currentChannel?.id === c.id ? "#242629" : "transparent"}
+                    cursor="pointer"
+                    _hover={{ bg: "#2f3136" }}
+                    onClick={() => setCurrentChannel && setCurrentChannel(c)}
+                  >
+                    # {c.name}
+                  </Box>
+                ))}
               </VStack>
             </Collapse>
 
@@ -136,7 +144,7 @@ export default function Chat() {
               Members
             </Text>
             <VStack spacing="2" align="stretch">
-              {onlineUsers.length === 0 ? (
+              {(!onlineUsers || onlineUsers.length === 0) ? (
                 <Text color="gray.500" fontSize="sm">
                   No one online
                 </Text>
@@ -166,18 +174,18 @@ export default function Chat() {
             <Flex align="center" justify="space-between">
               <Box>
                 <Text fontWeight="bold" fontSize="lg">
-                  {currentChannel ? `# ${currentChannel}` : "# general"}
+                  {currentChannel ? `# ${currentChannel?.name}` : "# general"}
                 </Text>
                 <Text color="gray.400" fontSize="sm" mt="1">
-                  Channel topic or description goes here
+                  {currentChannel?.topic ?? "Channel topic or description goes here"}
                 </Text>
               </Box>
               <Box textAlign="right">
                 <Text color="gray.400" fontSize="sm">
-                  {onlineUsers.length} online
+                  {onlineUsers?.length ?? 0} online
                 </Text>
                 <Text color="gray.500" fontSize="xs">
-                  Members · {onlineUsers.length}
+                  Members · {onlineUsers?.length ?? 0}
                 </Text>
               </Box>
             </Flex>
@@ -235,7 +243,7 @@ export default function Chat() {
                   boxShadow="md"
                   _hover={{ transform: "translateY(-2px)", filter: "brightness(1.05)" }}
                   transition="all 0.15s ease"
-                  onClick={() => scrollToBottom()}
+                  onClick={() => scrollToBottom && scrollToBottom()}
                 >
                   {unviewedCount > 0 && (
                     <Badge mr="2" colorScheme="red" borderRadius="full" fontSize="0.75em">
@@ -249,7 +257,7 @@ export default function Chat() {
 
             {/* Typing indicator */}
             <Box px={{ base: 3, md: 6 }} py="2" minH="28px">
-              {typingUsers.length > 0 && (
+              {typingUsers && typingUsers.length > 0 && (
                 <Text color="gray.400" fontSize="sm">
                   {typingUsers.join(", ")} {typingUsers.length === 1 ? "is" : "are"} typing...
                 </Text>
