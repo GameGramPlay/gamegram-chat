@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Input, Stack, IconButton, Box, Container } from "@chakra-ui/react";
-import { toaster } from "@/components/ui/toaster";
+import { Input, IconButton, Box, Container, Flex, Text } from "@chakra-ui/react";
 import { BiSend } from "react-icons/bi";
+import { toaster } from "@/components/ui/toaster";
 import { useAppContext } from "../context/appContext";
 import supabase from "../supabaseClient";
 
@@ -12,7 +12,6 @@ export default function MessageForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     const trimmed = message.trim();
     if (!trimmed) return;
 
@@ -29,7 +28,6 @@ export default function MessageForm() {
       ]);
 
       if (error) {
-        console.error(error.message);
         toaster.create({
           title: "Error sending",
           description: error.message,
@@ -43,47 +41,65 @@ export default function MessageForm() {
       }
 
       setMessage("");
-      console.log("Successfully sent!");
-    } catch (error) {
-      console.log("Error sending message:", error);
+    } catch (err) {
+      console.error("Error sending message:", err);
     } finally {
       setIsSending(false);
     }
   };
 
+  // Enter to send, Shift+Enter for newline
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      handleSubmit(e);
+    }
+  };
+
   return (
-    <Box py="10px" pt="15px" bg="gray.100">
+    <Box bg="#2f3136" py="10px" px="4">
       <Container maxW="600px">
         <form onSubmit={handleSubmit} autoComplete="off">
-          <Stack direction="row">
+          <Flex
+            bg="#40444b"
+            borderRadius="20px"
+            px="3"
+            py="2"
+            align="center"
+          >
             <Input
               name="message"
-              placeholder="Enter a message"
-              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Message #general"
               value={message}
-              bg="white"
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={handleKeyDown}
+              bg="transparent"
               border="none"
+              color="white"
+              _placeholder={{ color: "#b9bbbe" }}
+              resize="none"
+              flex="1"
+              fontSize="14px"
+              mr="2"
               autoFocus
-              maxLength="500"
-              color= "black"
             />
             <IconButton
-              background="teal"
-              colorScheme="teal"
-              aria-label="Send"
-              fontSize="20px"
+              aria-label="Send message"
+              icon={<BiSend />}
               type="submit"
-              disabled={!message.trim()}
+              size="md"
               isLoading={isSending}
-            >
-              <BiSend />
-            </IconButton>
-          </Stack>
+              disabled={!message.trim()}
+              bg="#5865f2"
+              _hover={{ bg: "#4752c4" }}
+              color="white"
+              borderRadius="full"
+            />
+          </Flex>
         </form>
-        <Box fontSize="10px" mt="1">
-          Warning: do not share any sensitive information, it’s a public chat
-          room 🙂
-        </Box>
+
+        <Text fontSize="10px" color="#b9bbbe" mt="2">
+          ⚠️ Do not share sensitive info in this public chat room
+        </Text>
       </Container>
     </Box>
   );
