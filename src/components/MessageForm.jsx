@@ -1,12 +1,10 @@
 import { Box, Flex, Icon, Text, VStack, Badge } from "@chakra-ui/react";
 import { BsChevronDoubleDown } from "react-icons/bs";
-import { useEffect, useState } from "react";
 import { useAppContext } from "../context/appContext";
 import Messages from "./Messages";
 import MessageForm from "./MessageForm";
 
 export default function ChatContainer() {
-  const [height, setHeight] = useState(window.innerHeight - 60); // adjust for header/menu
   const {
     scrollRef,
     onScroll,
@@ -16,14 +14,8 @@ export default function ChatContainer() {
     currentChannel,
   } = useAppContext();
 
-  useEffect(() => {
-    const handleResize = () => setHeight(window.innerHeight - 60);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
   return (
-    <Flex w="100%" h={`${height}px`} bg="#36393f">
+    <Flex w="100%" h="100vh" bg="#36393f">
       {/* Sidebar placeholder */}
       <Box
         w="220px"
@@ -46,7 +38,7 @@ export default function ChatContainer() {
       </Box>
 
       {/* Main chat area */}
-      <Flex flex="1" direction="column" bg="#2f3136" borderRadius="md">
+      <Flex flex="1" direction="column" bg="#2f3136">
         {/* Header */}
         <Flex
           align="center"
@@ -54,6 +46,7 @@ export default function ChatContainer() {
           bg="#2f3136"
           p="3"
           borderBottom="1px solid #202225"
+          flexShrink={0}
         >
           <Text fontWeight="bold" color="white">
             {currentChannel ? `# ${currentChannel}` : "# general"}
@@ -141,7 +134,7 @@ export default function ChatContainer() {
         </Box>
 
         {/* Message form at the bottom */}
-        <Box px="4" py="2" flexShrink={0} bg="#2f3136">
+        <Box flexShrink={0}>
           <MessageForm />
         </Box>
       </Flex>
