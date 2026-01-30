@@ -5,7 +5,7 @@ import Messages from "./Messages";
 import { BsChevronDoubleDown } from "react-icons/bs";
 
 export default function Chat() {
-  const [height, setHeight] = useState(window.innerHeight - 205);
+  const [height, setHeight] = useState(window.innerHeight - 100);
 
   const {
     scrollRef,
@@ -17,7 +17,7 @@ export default function Chat() {
 
   // Adjust height on window resize
   useEffect(() => {
-    const handleResize = () => setHeight(window.innerHeight - 205);
+    const handleResize = () => setHeight(window.innerHeight - 100);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
@@ -25,19 +25,42 @@ export default function Chat() {
   return (
     <Container maxW="600px" pb="20px">
       <Box
-        bg="gray.800"             // dark Discord-style background
-        p="4"
-        overflowY="auto"
+        bg="#2f3136" // Discord dark background
         borderRadius="md"
-        border="1px solid #2f3136" // subtle dark border
-        height={height}
-        onScroll={onScroll}
-        ref={scrollRef}
+        border="1px solid #202225"
+        height={`${height}px`}
+        overflowY="auto"
         position="relative"
-        boxShadow="lg"
+        ref={scrollRef}
+        onScroll={onScroll}
+        boxShadow="0 0 20px rgba(0,0,0,0.3)"
+        sx={{
+          scrollBehavior: "smooth",
+        }}
       >
+        {/* Top gradient shadow */}
+        <Box
+          position="sticky"
+          top="0"
+          height="24px"
+          bg="linear-gradient(to bottom, #2f3136, transparent)"
+          pointerEvents="none"
+          zIndex={5}
+        />
+
         <Messages />
 
+        {/* Bottom gradient shadow */}
+        <Box
+          position="sticky"
+          bottom="0"
+          height="24px"
+          bg="linear-gradient(to top, #2f3136, transparent)"
+          pointerEvents="none"
+          zIndex={5}
+        />
+
+        {/* Scroll to bottom button */}
         {!isOnBottom && (
           <Flex
             position="sticky"
@@ -45,18 +68,20 @@ export default function Chat() {
             justify="flex-end"
             width="100%"
             zIndex={10}
+            pointerEvents="none"
           >
             <Flex
               align="center"
-              bg="#5865f2"               // Discord blue
+              bg="#5865f2"
               color="white"
               px="3"
               py="1.5"
               borderRadius="full"
               cursor="pointer"
               boxShadow="md"
-              _hover={{ filter: "brightness(1.15)" }}
-              transition="all 0.15s ease"
+              pointerEvents="auto"
+              _hover={{ transform: "scale(1.05)", filter: "brightness(1.15)" }}
+              transition="all 0.2s ease"
               onClick={scrollToBottom}
             >
               {unviewedMessageCount > 0 && (
@@ -65,6 +90,7 @@ export default function Chat() {
                   colorScheme="red"
                   borderRadius="full"
                   fontSize="0.75em"
+                  transition="all 0.2s ease"
                 >
                   {unviewedMessageCount}
                 </Badge>
