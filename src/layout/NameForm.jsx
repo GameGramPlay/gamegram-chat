@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Input, Stack, IconButton } from "@chakra-ui/react";
+import { Input, Stack, IconButton, Box, Text } from "@chakra-ui/react";
 import { BiSave, BiEdit } from "react-icons/bi";
 import { useAppContext } from "../context/appContext";
 
@@ -7,73 +7,72 @@ export default function NameForm() {
   const { username, setUsername } = useAppContext();
   const [newUsername, setNewUsername] = useState(username);
   const [isEditing, setIsEditing] = useState(false);
-  const toggleEditing = () => {
-    setIsEditing(!isEditing);
-  };
 
   const inputRef = useRef(null);
 
+  // Auto-focus input when editing
   useEffect(() => {
-    if (isEditing) {
-      inputRef.current.focus();
-    }
+    if (isEditing && inputRef.current) inputRef.current.focus();
   }, [isEditing]);
-  useEffect(() => {
-    setNewUsername(username);
-  }, [username]);
+
+  // Sync with context username
+  useEffect(() => setNewUsername(username), [username]);
+
+  const toggleEditing = () => setIsEditing((prev) => !prev);
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    toggleEditing();
-
-    if (!newUsername) {
+    if (!newUsername.trim()) {
       setNewUsername(username);
+      setIsEditing(false);
       return;
     }
-    // setUsername(newUsername);
-    // setIsEditing(false);
-
-    setUsername(newUsername);
-    localStorage.setItem("username", newUsername);
+    setUsername(newUsername.trim());
+    localStorage.setItem("username", newUsername.trim());
+    setIsEditing(false);
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ marginRight: "20px" }}>
-      <Stack direction="row">
+    <form onSubmit={handleSubmit}>
+      <Stack direction="row" spacing={2} align="center">
         {isEditing ? (
           <Input
-            name="username"
-            placeholder="Choose a username"
-            onChange={(e) => setNewUsername(e.target.value)}
-            value={newUsername}
-            bg="gray.100"
-            size="sm"
-            border="none"
-            onBlur={handleSubmit}
             ref={inputRef}
-            maxLength="15"
+            value={newUsername}
+            onChange={(e) => setNewUsername(e.target.value)}
+            placeholder="Enter username"
+            size="sm"
+            maxLength={15}
+            bg="#202225"         // Discord dark input
+            color="white"
+            border="1px solid #4f545c"
+            _focus={{ borderColor: "#7289da" }}
+            onBlur={handleSubmit}
           />
         ) : (
-          <span onClick={toggleEditing} style={{ cursor: "pointer" }}>
-            Welcome <strong>{newUsername}</strong>
-          </span>
+          <Box
+            onClick={toggleEditing}
+            cursor="pointer"
+            _hover={{ opacity: 0.8 }}
+          >
+            <Text fontSize="sm" color="gray.300">
+              Welcome <strong>{newUsername}</strong>
+            </Text>
+          </Box>
         )}
+
         <IconButton
           size="sm"
-          paddingBottom="12px"
-          variant="outline"
-          colorScheme="teal"
-          aria-label="Save"
-          fontSize="15px"
-          border="none"
-          color="teal"
+          aria-label={isEditing ? "Save username" : "Edit username"}
+          icon={isEditing ? <BiSave /> : <BiEdit />}
           onClick={(e) => {
-            if (isEditing) {
-              handleSubmit(e);
-            } else toggleEditing();
+            e.preventDefault();
+            isEditing ? handleSubmit(e) : toggleEditing();
           }}
-        >
-          {isEditing ? <BiSave /> : <BiEdit />}
-        </IconButton>
+          variant="ghost"
+          colorScheme="teal"
+          _hover={{ bg: "#3ba55d", color: "white" }}
+        />
       </Stack>
     </form>
   );
