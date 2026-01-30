@@ -1,4 +1,12 @@
-import { Badge, Box, Container, Flex, Icon } from "@chakra-ui/react";
+import {
+  Badge,
+  Box,
+  Container,
+  Flex,
+  Icon,
+  Text,
+  VStack,
+} from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { useAppContext } from "../context/appContext";
 import Messages from "./Messages";
@@ -13,9 +21,9 @@ export default function Chat() {
     scrollToBottom,
     isOnBottom,
     unviewedMessageCount,
+    currentChannel,
   } = useAppContext();
 
-  // Adjust height on window resize
   useEffect(() => {
     const handleResize = () => setHeight(window.innerHeight - 100);
     window.addEventListener("resize", handleResize);
@@ -23,83 +31,131 @@ export default function Chat() {
   }, []);
 
   return (
-    <Container maxW="600px" pb="20px">
+    <Flex w="100%" h={`${height + 20}px`} bg="#36393f">
+      {/* Sidebar placeholder */}
       <Box
-        bg="#2f3136" // Discord dark background
-        borderRadius="md"
-        border="1px solid #202225"
-        height={`${height}px`}
-        overflowY="auto"
-        position="relative"
-        ref={scrollRef}
-        onScroll={onScroll}
-        boxShadow="0 0 20px rgba(0,0,0,0.3)"
-        sx={{
-          scrollBehavior: "smooth",
-        }}
+        w="220px"
+        bg="#202225"
+        borderRight="1px solid #2f3136"
+        p="4"
+        display={{ base: "none", md: "block" }}
       >
-        {/* Top gradient shadow */}
-        <Box
-          position="sticky"
-          top="0"
-          height="24px"
-          bg="linear-gradient(to bottom, #2f3136, transparent)"
-          pointerEvents="none"
-          zIndex={5}
-        />
-
-        <Messages />
-
-        {/* Bottom gradient shadow */}
-        <Box
-          position="sticky"
-          bottom="0"
-          height="24px"
-          bg="linear-gradient(to top, #2f3136, transparent)"
-          pointerEvents="none"
-          zIndex={5}
-        />
-
-        {/* Scroll to bottom button */}
-        {!isOnBottom && (
-          <Flex
-            position="sticky"
-            bottom="16px"
-            justify="flex-end"
-            width="100%"
-            zIndex={10}
-            pointerEvents="none"
-          >
-            <Flex
-              align="center"
-              bg="#5865f2"
-              color="white"
-              px="3"
-              py="1.5"
-              borderRadius="full"
-              cursor="pointer"
-              boxShadow="md"
-              pointerEvents="auto"
-              _hover={{ transform: "scale(1.05)", filter: "brightness(1.15)" }}
-              transition="all 0.2s ease"
-              onClick={scrollToBottom}
-            >
-              {unviewedMessageCount > 0 && (
-                <Badge
-                  mr="2"
-                  colorScheme="red"
-                  borderRadius="full"
-                  fontSize="0.75em"
-                  transition="all 0.2s ease"
-                >
-                  {unviewedMessageCount}
-                </Badge>
-              )}
-              <Icon as={BsChevronDoubleDown} boxSize={5} />
-            </Flex>
-          </Flex>
-        )}
+        <Text color="gray.300" fontWeight="bold" mb="4">
+          Channels
+        </Text>
+        {/* You can map actual channels here */}
+        <VStack spacing="2" align="stretch">
+          <Box px="2" py="1" borderRadius="md" _hover={{ bg: "#2f3136" }}>
+            # general
+          </Box>
+          <Box px="2" py="1" borderRadius="md" _hover={{ bg: "#2f3136" }}>
+            # random
+          </Box>
+        </VStack>
       </Box>
-    </Container>
+
+      {/* Chat area */}
+      <Flex flex="1" direction="column" px={{ base: 2, md: 4 }} py={2}>
+        {/* Header */}
+        <Flex
+          align="center"
+          justify="space-between"
+          bg="#2f3136"
+          p="3"
+          borderRadius="md"
+          mb="2"
+          border="1px solid #202225"
+        >
+          <Text fontWeight="bold" color="white">
+            {currentChannel ? `# ${currentChannel}` : "# general"}
+          </Text>
+          {/* Placeholder for channel info */}
+          <Text color="gray.400" fontSize="sm">
+            12 online
+          </Text>
+        </Flex>
+
+        {/* Chat messages */}
+        <Box
+          bg="#2f3136"
+          borderRadius="md"
+          border="1px solid #202225"
+          flex="1"
+          overflowY="auto"
+          position="relative"
+          ref={scrollRef}
+          onScroll={onScroll}
+          boxShadow="0 0 20px rgba(0,0,0,0.3)"
+          sx={{ scrollBehavior: "smooth" }}
+        >
+          {/* Top gradient shadow */}
+          <Box
+            position="sticky"
+            top="0"
+            height="24px"
+            bg="linear-gradient(to bottom, #2f3136, transparent)"
+            pointerEvents="none"
+            zIndex={5}
+          />
+
+          <Messages />
+
+          {/* Bottom gradient shadow */}
+          <Box
+            position="sticky"
+            bottom="0"
+            height="24px"
+            bg="linear-gradient(to top, #2f3136, transparent)"
+            pointerEvents="none"
+            zIndex={5}
+          />
+
+          {/* Scroll to bottom button */}
+          {!isOnBottom && (
+            <Flex
+              position="sticky"
+              bottom="16px"
+              justify="flex-end"
+              width="100%"
+              zIndex={10}
+              pointerEvents="none"
+            >
+              <Flex
+                align="center"
+                bg="#5865f2"
+                color="white"
+                px="3"
+                py="1.5"
+                borderRadius="full"
+                cursor="pointer"
+                boxShadow="md"
+                pointerEvents="auto"
+                _hover={{ transform: "scale(1.05)", filter: "brightness(1.15)" }}
+                transition="all 0.2s ease"
+                onClick={scrollToBottom}
+              >
+                {unviewedMessageCount > 0 && (
+                  <Badge
+                    mr="2"
+                    colorScheme="red"
+                    borderRadius="full"
+                    fontSize="0.75em"
+                    transition="all 0.2s ease"
+                  >
+                    {unviewedMessageCount}
+                  </Badge>
+                )}
+                <Icon as={BsChevronDoubleDown} boxSize={5} />
+              </Flex>
+            </Flex>
+          )}
+        </Box>
+
+        {/* Typing indicator placeholder */}
+        <Box mt="2" color="gray.400" fontSize="sm">
+          Someone is typing...
+        </Box>
+      </Flex>
+    </Flex>
   );
 }
