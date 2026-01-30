@@ -4,7 +4,7 @@ import { BiSend } from "react-icons/bi";
 import { toaster } from "@/components/ui/toaster";
 import { useAppContext } from "../context/appContext";
 import supabase from "../supabaseClient";
-import { emojiMap } from "../ui/emojiMap"; // <- import your map
+import { emojiMap } from "/ui/emojiMap.js"; // <- import your map
 
 export default function MessageForm() {
   const { username, country, session } = useAppContext();
