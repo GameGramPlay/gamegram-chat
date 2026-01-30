@@ -14,9 +14,10 @@ import { toaster } from "@/components/ui/toaster";
 import { useAppContext } from "../context/appContext";
 import supabase from "../supabaseClient";
 import { emojiMap } from "./ui/emojiMap";
+import { useAppContext } from "../context/appContext";
 
 export default function MessageForm() {
-  const { username, country, session } = useAppContext();
+  const { username, country, session, currentChannel } = useAppContext();
   const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
 
@@ -113,9 +114,9 @@ export default function MessageForm() {
           username,
           country,
           is_authenticated: !!session,
+          channel_id: currentChannel?.id ?? 1,
         },
       ]);
-
       if (error) {
         toaster.create({
           title: "Error sending",
