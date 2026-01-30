@@ -9,8 +9,8 @@ import {
   VStack,
   List,
   ListItem,
-  useOutsideClick,
 } from "@chakra-ui/react";
+import { useOutsideClick } from "@chakra-ui/hooks";
 import { BiSend } from "react-icons/bi";
 import { toaster } from "@/components/ui/toaster";
 import { useAppContext } from "../context/appContext";
