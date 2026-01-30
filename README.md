@@ -1,6 +1,11 @@
-# Full-stack real-time chat
-# GameGram version
+# Gamegram real-time chat
+## Demo
 
+[https://gamegram-chat.vercel.app](https://gamegram-chat.vercel.app/)
+### [Join the chat](https://gamegram-chat.vercel.app/)
+<br>
+
+## How to create it
 - **Data:** PostgeSQL managed by [Supabase](https://supabase.io/) [@supabase_io](https://twitter.com/supabase_io) (awsome real-time API).
 - **Front-end**: React + Vite
 - **UI library**: [chakra-ui](https://chakra-ui.com/) [@chakra_ui](https://twitter.com/chakra_ui)
@@ -53,9 +58,3 @@ Follow instrunction [here](https://supabase.io/docs/guides/auth/auth-github)
 ## Build
 
 `npm run build` to build the react client
-
-# Demo
-
-[https://random-chat.netlify.app](https://random-chat.netlify.app/)
-
-!['demo'](https://random-chat.netlify.app/demo.png "demo")
