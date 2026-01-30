@@ -3,10 +3,16 @@ import { useAppContext } from "../context/appContext";
 import Message from "./Message";
 
 export default function Messages() {
-  const { username, loadingInitial, error, getMessagesAndSubscribe, messages } =
-    useAppContext();
+  const {
+    username,
+    loadingInitial,
+    error,
+    getMessagesAndSubscribe,
+    messages,
+  } = useAppContext();
 
-  const reversed = [...messages].reverse();
+  // Messages in chronological order (oldest first)
+  const orderedMessages = [...messages].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
   if (loadingInitial)
     return (
@@ -41,25 +47,28 @@ export default function Messages() {
 
   return (
     <VStack
-      spacing={2}
+      spacing={1}
       align="stretch"
       bg="gray.900"
       p={4}
       borderRadius="md"
       h="calc(100vh - 100px)"
       overflowY="auto"
+      id="messages-container"
     >
-      {reversed.map((message) => {
+      {orderedMessages.map((message, idx) => {
         const isYou = message.username === username;
+        const prevMessage = idx > 0 ? orderedMessages[idx - 1] : null;
+        const showUsername =
+          !prevMessage || prevMessage.username !== message.username;
+
         return (
           <Message
             key={message.id}
             message={message}
             isYou={isYou}
-            style={{
-              alignSelf: isYou ? "flex-end" : "flex-start",
-              maxWidth: "70%",
-            }}
+            prevMessage={prevMessage}
+            showUsername={showUsername}
           />
         );
       })}
