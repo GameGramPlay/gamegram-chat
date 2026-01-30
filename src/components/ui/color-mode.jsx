@@ -4,7 +4,7 @@ import * as React from 'react'
 import { IconButton, Skeleton } from '@chakra-ui/react'
 import { ThemeProvider, useTheme } from 'next-themes'
 import { LuMoon, LuSun } from 'react-icons/lu'
-import { ClientOnly } from './ClientOnly' // make sure you have this component
+import { ClientOnly } from './ClientOnly.jsx' // make sure you have this component
 
 // Provider to wrap your app
 export function ColorModeProvider({ children }) {
