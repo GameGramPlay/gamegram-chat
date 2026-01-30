@@ -1,11 +1,20 @@
-import { Badge, Box, Container } from "@chakra-ui/react";
-import { useEffect, useState } from "react";
+import {
+  Badge,
+  Box,
+  Container,
+  Flex,
+  Icon,
+  useColorModeValue,
+} from "@chakra-ui/react";
+import { useEffect, useRef, useState } from "react";
+import { BsChevronDoubleDown } from "react-icons/bs";
 import { useAppContext } from "../context/appContext";
 import Messages from "./Messages";
-import { BsChevronDoubleDown } from "react-icons/bs";
 
 export default function Chat() {
-  const [height, setHeight] = useState(window.innerHeight - 205);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState(0);
+
   const {
     scrollRef,
     onScroll,
@@ -13,54 +22,81 @@ export default function Chat() {
     isOnBottom,
     unviewedMessageCount,
   } = useAppContext();
+
   useEffect(() => {
-    const handleResize = () => {
-      setHeight(window.innerHeight - 205);
+    const resize = () => {
+      if (containerRef.current) {
+        setHeight(containerRef.current.offsetHeight);
+      }
     };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    resize();
+    window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
   }, []);
 
+  const bg = useColorModeValue("gray.100", "gray.800");
+  const chatBg = useColorModeValue("white", "gray.900");
+  const jumpBg = useColorModeValue("gray.700", "gray.600");
+
   return (
-    <Container maxW="600px" pb="20px">
+    <Container
+      maxW="700px"
+      p="0"
+      ref={containerRef}
+      height="calc(100vh - 140px)"
+      display="flex"
+      flexDir="column"
+    >
       <Box
-        bg="white"
-        p="5"
-        overflow="auto"
-        borderRadius="10px"
-        height={height}
+        flex="1"
+        bg={chatBg}
+        px="4"
+        py="3"
+        overflowY="auto"
+        borderRadius="md"
+        border="1px solid"
+        borderColor={useColorModeValue("gray.200", "gray.700")}
         onScroll={onScroll}
         ref={scrollRef}
+        position="relative"
       >
         <Messages />
+
         {!isOnBottom && (
-          <div
-            style={{
-              position: "sticky",
-              bottom: 8,
-              // right: 0,
-              float: "right",
-              cursor: "pointer",
-            }}
-            onClick={scrollToBottom}
+          <Flex
+            position="sticky"
+            bottom="16px"
+            justify="center"
+            zIndex={10}
+            pointerEvents="none"
           >
-            {unviewedMessageCount > 0 ? (
-              <Badge
-                ml="1"
-                fontSize="0.8em"
-                colorScheme="green"
-                display="flex"
-                borderRadius="7px"
-                padding="3px 5px"
-                alignItems="center"
-              >
-                {unviewedMessageCount}
-                <BsChevronDoubleDown style={{ marginLeft: "3px" }} />
-              </Badge>
-            ) : (
-              <BsChevronDoubleDown style={{ marginLeft: "3px" }} />
-            )}
-          </div>
+            <Flex
+              pointerEvents="auto"
+              align="center"
+              bg={jumpBg}
+              color="white"
+              px="3"
+              py="1.5"
+              borderRadius="full"
+              cursor="pointer"
+              boxShadow="md"
+              _hover={{ transform: "translateY(-1px)", bg: "gray.500" }}
+              transition="all 0.15s ease"
+              onClick={scrollToBottom}
+            >
+              {unviewedMessageCount > 0 && (
+                <Badge
+                  mr="2"
+                  colorScheme="green"
+                  borderRadius="full"
+                  fontSize="0.75em"
+                >
+                  {unviewedMessageCount}
+                </Badge>
+              )}
+              <Icon as={BsChevronDoubleDown} />
+            </Flex>
+          </Flex>
         )}
       </Box>
     </Container>
