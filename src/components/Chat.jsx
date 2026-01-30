@@ -1,12 +1,11 @@
-import {Badge,Box,Container,Flex,Icon,useColorModeValue} from "@chakra-ui/react";
-import { useEffect, useRef, useState } from "react";
-import { BsChevronDoubleDown } from "react-icons/bs";
+import { Badge, Box, Container, Flex, Icon } from "@chakra-ui/react";
+import { useEffect, useState } from "react";
 import { useAppContext } from "../context/appContext";
 import Messages from "./Messages";
+import { BsChevronDoubleDown } from "react-icons/bs";
 
 export default function Chat() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [height, setHeight] = useState(0);
+  const [height, setHeight] = useState(window.innerHeight - 205);
 
   const {
     scrollRef,
@@ -16,39 +15,22 @@ export default function Chat() {
     unviewedMessageCount,
   } = useAppContext();
 
+  // Adjust height on window resize
   useEffect(() => {
-    const resize = () => {
-      if (containerRef.current) {
-        setHeight(containerRef.current.offsetHeight);
-      }
-    };
-    resize();
-    window.addEventListener("resize", resize);
-    return () => window.removeEventListener("resize", resize);
+    const handleResize = () => setHeight(window.innerHeight - 205);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const bg = useColorModeValue("gray.100", "gray.800");
-  const chatBg = useColorModeValue("white", "gray.900");
-  const jumpBg = useColorModeValue("gray.700", "gray.600");
-
   return (
-    <Container
-      maxW="700px"
-      p="0"
-      ref={containerRef}
-      height="calc(100vh - 140px)"
-      display="flex"
-      flexDir="column"
-    >
+    <Container maxW="600px" pb="20px">
       <Box
-        flex="1"
-        bg={chatBg}
-        px="4"
-        py="3"
+        bg="#ffffff"          // fixed light background
+        p="5"
         overflowY="auto"
-        borderRadius="md"
-        border="1px solid"
-        borderColor={useColorModeValue("gray.200", "gray.700")}
+        borderRadius="10px"
+        border="1px solid #e2e8f0"
+        height={height}
         onScroll={onScroll}
         ref={scrollRef}
         position="relative"
@@ -59,21 +41,20 @@ export default function Chat() {
           <Flex
             position="sticky"
             bottom="16px"
-            justify="center"
+            justify="flex-end"
+            width="100%"
             zIndex={10}
-            pointerEvents="none"
           >
             <Flex
-              pointerEvents="auto"
               align="center"
-              bg={jumpBg}
+              bg="#1d9bf0"                // fixed blue for jump button
               color="white"
               px="3"
               py="1.5"
               borderRadius="full"
               cursor="pointer"
               boxShadow="md"
-              _hover={{ transform: "translateY(-1px)", bg: "gray.500" }}
+              _hover={{ filter: "brightness(1.1)" }}
               transition="all 0.15s ease"
               onClick={scrollToBottom}
             >
