@@ -7,12 +7,12 @@ import { truncateText } from "../utils";
 dayjs.extend(relativeTime);
 
 export default function Message({ message, isYou, showUsername = true }) {
-  const countyCode =
+  const countryCode =
     message.country && message.country !== "undefined"
       ? message.country.toLowerCase()
       : "";
 
-  const bubbleBg = isYou ? "#3ba55d" : "#36393f"; // Discord-like green for you, dark gray for others
+  const bubbleBg = isYou ? "#3ba55d" : "#36393f"; // green for self, dark gray for others
   const textColor = isYou ? "white" : "gray.200";
 
   return (
@@ -42,8 +42,8 @@ export default function Message({ message, isYou, showUsername = true }) {
           top="0"
           left={isYou ? "auto" : "-8px"}
           right={isYou ? "-8px" : "auto"}
-          width={0}
-          height={0}
+          width="0"
+          height="0"
           borderStyle="solid"
           borderWidth={isYou ? "0 0 10px 10px" : "0 10px 10px 0"}
           borderColor={
@@ -55,23 +55,24 @@ export default function Message({ message, isYou, showUsername = true }) {
 
         {/* Username + verified + country */}
         {showUsername && (
-          <Flex align="center" mb="1">
+          <Flex align="center" mb="1" flexWrap="wrap">
             <Text fontWeight="600" fontSize="sm" mr="1">
               {message.username}
             </Text>
             {message.is_authenticated && (
               <Icon as={MdVerified} color="#1d9bf0" w={4} h={4} mr="1" />
             )}
-            {countyCode && (
+            {countryCode && (
               <Flex align="center" fontSize="xs" color={isYou ? "gray.200" : "gray.400"}>
                 from {message.country}
                 <Image
-                  src={`/flags/${countyCode}.png`}
+                  src={`/flags/${countryCode}.png`}
                   alt={message.country}
                   w="16px"
                   h="11px"
                   ml="1"
                   mt="-1px"
+                  borderRadius="2px"
                 />
               </Flex>
             )}
@@ -84,7 +85,12 @@ export default function Message({ message, isYou, showUsername = true }) {
         </Text>
 
         {/* Timestamp */}
-        <Text fontSize="xs" color={isYou ? "gray.200" : "gray.400"} mt="1" textAlign="right">
+        <Text
+          fontSize="xs"
+          color={isYou ? "gray.200" : "gray.400"}
+          mt="1"
+          textAlign="right"
+        >
           {dayjs(message.timestamp).fromNow()}
         </Text>
       </Box>
