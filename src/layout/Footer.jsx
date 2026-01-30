@@ -16,24 +16,21 @@ export default function Footer() {
         bg="white"
       >
         <GridItem justifySelf="start">
-          {/* Built by{" "} */}
-          {/* <a href="http://shimon-wosner.vercel.app" target="_blank"> */}
           <a
-            href="https://twitter.com/shwosner"
+            href="https://gamegramplay.github.io/GameGram-website/"
             target="_blank"
             rel="noreferrer"
           >
-            <FaTwitter style={{ display: "inline" }} />
-            @shwosner
+            <FaGithub style={{ display: "inline" }} /> GameGram
           </a>
         </GridItem>
         <GridItem justifySelf="end">
           <a
-            href="https://github.com/shwosner/realtime-chat-supabase-react"
+            href="https://gamegramplay.github.io/GameGram-website/"
             target="_blank"
             rel="noreferrer"
           >
-            <FaGithub style={{ display: "inline" }} /> Source code
+            <FaGithub style={{ display: "inline" }} /> GameGram
           </a>
         </GridItem>
       </Grid>
