@@ -3,7 +3,8 @@ import { keyframes } from "@emotion/react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { MdVerified } from "react-icons/md";
-import emojiMap from "./ui/emojiMap.js";
+import { emojiMap } from "./ui/emojiMap.js"; // ✅ named import
+
 
 dayjs.extend(relativeTime);
 
