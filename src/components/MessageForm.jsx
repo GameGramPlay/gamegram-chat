@@ -7,7 +7,6 @@ import {
   Flex,
   Text,
   VStack,
-  ListItem,
 } from "@chakra-ui/react";
 import { useOutsideClick } from "@chakra-ui/hooks";
 import { BiSend } from "react-icons/bi";
@@ -53,10 +52,11 @@ export default function MessageForm() {
   };
 
   const insertEmoji = (emojiName) => {
+    const emoji = emojiMap[emojiName] || "";
     const cursorPos = inputRef.current.selectionStart;
     const leftText = message.slice(0, cursorPos);
     const rightText = message.slice(cursorPos);
-    const newLeft = leftText.replace(/:([a-zA-Z0-9_+-]*)$/, emojiMap[emojiName]);
+    const newLeft = leftText.replace(/:([a-zA-Z0-9_+-]*)$/, emoji);
     setMessage(newLeft + rightText);
     setEmojiQuery("");
     setMatchedEmojis([]);
@@ -177,7 +177,7 @@ export default function MessageForm() {
                 >
                   <VStack spacing="0" align="stretch">
                     {matchedEmojis.map((name, idx) => (
-                      <ListItem
+                      <Box
                         key={name}
                         px="3"
                         py="1"
@@ -191,7 +191,7 @@ export default function MessageForm() {
                         }}
                       >
                         {emojiMap[name]} {name}
-                      </ListItem>
+                      </Box>
                     ))}
                   </VStack>
                 </Box>
