@@ -8,7 +8,6 @@ import {
   Text,
   VStack,
   HStack,
-  Divider,
   IconButton,
   useBreakpointValue,
 } from "@chakra-ui/react";
@@ -138,7 +137,7 @@ export default function Chat() {
               </VStack>
             )}
 
-            <Divider borderColor="#26282b" />
+            <Box h="1px" borderColor="#26282b" my="3"/>
 
             <Text mt="4" mb="2" color="gray.400" fontSize="sm">
               Members
