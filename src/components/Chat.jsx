@@ -1,4 +1,5 @@
 // src/components/Chat.jsx
+"use client";
 import {
   Badge,
   Box,
