@@ -15,10 +15,9 @@ import {
   PopoverContent,
   PopoverBody,
   PopoverArrow,
-  PopoverCloseButton,
-  useDisclosure,
 } from "@chakra-ui/react";
-import { useOutsideClick } from "@chakra-ui/hooks";
+import { PopoverCloseButton } from "@chakra-ui/popover"; // new, fixes Rollup
+import { useOutsideClick, useDisclosure } from "@chakra-ui/hooks";
 import { BiSend, BiPaperclip, BiSmile } from "react-icons/bi";
 import { toaster } from "@/components/ui/toaster";
 import { useAppContext } from "../context/appContext";
