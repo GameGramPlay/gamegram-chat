@@ -159,6 +159,13 @@ export function AppContextProvider({ children }) {
         async (payload) => {
           const newMsg = payload.new;
           if (!newMsg) return;
+
+          // **DEFENSIVE CHECK**: ignore rows missing channel_id (these cause DB constraint violations when inserted elsewhere)
+          if (newMsg.channel_id === null || typeof newMsg.channel_id === "undefined") {
+            console.warn("Received message without channel_id — ignoring. payload:", payload);
+            return;
+          }
+
           // only include messages for the current channel
           if (String(newMsg.channel_id) !== String(channel.id)) return;
           // attach empty reactions (we will get reaction events separately)
@@ -220,9 +227,7 @@ export function AppContextProvider({ children }) {
         .single();
 
       if (e1 && e1.code !== "PGRST116") {
-        // PGRST116 is "No rows found" from single() — ignore
-        // If other error, log
-        if (e1) { /* ignore single() missing */ }
+        // ignore single() missing => PGRST116
       }
 
       if (existing && existing.id) {
@@ -240,6 +245,39 @@ export function AppContextProvider({ children }) {
       console.error("toggleReaction error", err);
     }
   }, [username]);
+
+  // NEW: sendMessage - always sets channel_id, validates before insert
+  const sendMessage = useCallback(
+    async ({ text, metadata = {} }) => {
+      if (!text || !text.trim()) return { error: "empty" };
+      if (!currentChannel || !currentChannel.id) {
+        console.warn("Attempted to send message without a selected channel");
+        return { error: "no_channel_selected" };
+      }
+
+      const payload = {
+        channel_id: currentChannel.id, // **critical**
+        username,
+        text: text.trim(),
+        country,
+        created_at: new Date().toISOString(),
+        ...metadata,
+      };
+
+      try {
+        const { data, error } = await supabase.from("messages").insert(payload).select().single();
+        if (error) {
+          console.error("sendMessage insert error:", error);
+          return { error };
+        }
+        return { data };
+      } catch (err) {
+        console.error("sendMessage error:", err);
+        return { error: err };
+      }
+    },
+    [currentChannel, username, country]
+  );
 
   // change channel (client-side)
   const selectChannel = useCallback(async (channel) => {
@@ -338,6 +376,9 @@ export function AppContextProvider({ children }) {
 
         // reactions
         toggleReaction,
+
+        // send message helper (use this instead of direct inserts)
+        sendMessage,
 
         // refresh
         refreshMessages: () => currentChannel && loadMessagesForChannel(currentChannel),
