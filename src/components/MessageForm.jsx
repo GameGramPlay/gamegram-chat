@@ -16,7 +16,10 @@ import {
   PopoverBody,
   PopoverArrow,
 } from "@chakra-ui/react";
-import { PopoverCloseButton } from "@chakra-ui/react/dist/esm/popover/popover-close-button";
+import {
+  PopoverCloseButton,
+} from "@chakra-ui/react/dist/declarations/src/popover";
+
 import { useOutsideClick, useDisclosure } from "@chakra-ui/hooks";
 import { BiSend, BiPaperclip, BiSmile } from "react-icons/bi";
 import { toaster } from "@/components/ui/toaster";
