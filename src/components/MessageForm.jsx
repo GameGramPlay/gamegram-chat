@@ -16,9 +16,6 @@ import {
   PopoverBody,
   PopoverArrow,
 } from "@chakra-ui/react";
-import {
-  PopoverCloseButton,
-} from "@chakra-ui/react/dist/declarations/src/popover";
 
 import { useOutsideClick, useDisclosure } from "@chakra-ui/hooks";
 import { BiSend, BiPaperclip, BiSmile } from "react-icons/bi";
@@ -365,7 +362,7 @@ export default function MessageForm() {
 
                 <PopoverContent bg="#2f3136" color="white" width="340px" _focus={{ boxShadow: "none" }}>
                   <PopoverArrow bg="#2f3136" />
-                  <PopoverCloseButton />
+                  <IconButton />
                   <PopoverBody p={3}>
                     <SimpleGrid columns={8} spacing={2} maxH="260px" overflowY="auto">
                       {emojiEntries.map(([name, char]) => (
