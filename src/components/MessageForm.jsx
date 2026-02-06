@@ -9,13 +9,13 @@ import {
   VStack,
   HStack,
   Tooltip,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalCloseButton,
   SimpleGrid,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverBody,
+  PopoverArrow,
+  PopoverCloseButton,
   useDisclosure,
 } from "@chakra-ui/react";
 import { useOutsideClick } from "@chakra-ui/hooks";
@@ -28,7 +28,7 @@ import { emojiMap } from "./ui/emojiMap";
 /**
  * MessageForm with:
  * - :autocomplete
- * - Emoji picker modal (grid)
+ * - Emoji picker popover (grid)
  * - Optimistic UI + socket broadcast hooks
  *
  * NOTE: This component will use, if available from useAppContext():
@@ -36,7 +36,7 @@ import { emojiMap } from "./ui/emojiMap";
  *  - addLocalMessage(msg)  -> optional helper to append optimistic message locally
  *  - socket                -> socket instance to emit optimistic and update events
  *
- * If none of the above exist, we fallback to inserting into Supabase only.
+ * Popover replaces Modal to avoid missing-export build issues.
  */
 
 export default function MessageForm() {
@@ -60,7 +60,7 @@ export default function MessageForm() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [showAutocomplete, setShowAutocomplete] = useState(false);
 
-  // emoji picker modal
+  // emoji picker popover
   const { isOpen: isPickerOpen, onOpen: openPicker, onClose: closePicker } = useDisclosure();
 
   const inputRef = useRef(null);
@@ -143,6 +143,9 @@ export default function MessageForm() {
         // ignore
       }
     }, 0);
+
+    // If the picker popover is open, close it after selection to mimic Discord behavior
+    closePicker();
   };
 
   // parse emoji tokens like :smile: or :smile into emojiMap char if exists
@@ -238,7 +241,6 @@ export default function MessageForm() {
           try {
             addLocalMessage(optimisticMessage);
           } catch (err) {
-            // ignore — best-effort
             console.warn("addLocalMessage failed:", err);
           }
         } else if (socket && typeof socket.emit === "function") {
@@ -285,16 +287,6 @@ export default function MessageForm() {
           }
         }
 
-        // if addLocalMessage was used we might want to replace/update the optimistic item.
-        // Some apps provide a replaceLocalMessage helper — try to call it if present.
-        if (typeof addLocalMessage === "object" && addLocalMessage !== null && typeof addLocalMessage.replace === "function") {
-          try {
-            addLocalMessage.replace(tempId, data);
-          } catch (err) {
-            // ignore
-          }
-        }
-
         // success: clear composer
         setMessage("");
         setMatchedEmojis([]);
@@ -329,10 +321,9 @@ export default function MessageForm() {
     ]
   );
 
-  // Open emoji picker: focus and/or optionally insert a colon if helpful
+  // Open emoji picker: focus input and open popover
   const handleOpenPicker = () => {
     openPicker();
-    // focus input so user can continue typing after picking
     setTimeout(() => inputRef.current?.focus(), 10);
   };
 
@@ -355,16 +346,51 @@ export default function MessageForm() {
                 />
               </Tooltip>
 
-              <Tooltip label="Emoji picker">
-                <IconButton
-                  aria-label="Emoji"
-                  icon={<BiSmile />}
-                  size="sm"
-                  variant="ghost"
-                  color="gray.300"
-                  onClick={handleOpenPicker}
-                />
-              </Tooltip>
+              {/* Popover picker anchored to the emoji button */}
+              <Popover isOpen={isPickerOpen} onOpen={openPicker} onClose={closePicker} placement="top-start" closeOnBlur>
+                <PopoverTrigger>
+                  <Tooltip label="Emoji picker">
+                    <IconButton
+                      aria-label="Emoji"
+                      icon={<BiSmile />}
+                      size="sm"
+                      variant="ghost"
+                      color="gray.300"
+                      onClick={handleOpenPicker}
+                    />
+                  </Tooltip>
+                </PopoverTrigger>
+
+                <PopoverContent bg="#2f3136" color="white" width="340px" _focus={{ boxShadow: "none" }}>
+                  <PopoverArrow bg="#2f3136" />
+                  <PopoverCloseButton />
+                  <PopoverBody p={3}>
+                    <SimpleGrid columns={8} spacing={2} maxH="260px" overflowY="auto">
+                      {emojiEntries.map(([name, char]) => (
+                        <Box
+                          key={name}
+                          role="button"
+                          onClick={() => {
+                            insertEmoji(char);
+                            // close popover to mimic Discord flow
+                            closePicker();
+                            // focus back
+                            setTimeout(() => inputRef.current?.focus(), 0);
+                          }}
+                          cursor="pointer"
+                          borderRadius="6px"
+                          _hover={{ bg: "#3a3d41" }}
+                          textAlign="center"
+                          fontSize="20px"
+                          p={2}
+                        >
+                          {char}
+                        </Box>
+                      ))}
+                    </SimpleGrid>
+                  </PopoverBody>
+                </PopoverContent>
+              </Popover>
             </HStack>
 
             <Box flex="1" position="relative">
@@ -459,40 +485,6 @@ export default function MessageForm() {
           </Text>
         </Flex>
       </Container>
-
-      {/* Emoji picker modal */}
-      <Modal isOpen={isPickerOpen} onClose={closePicker} size="md" isCentered>
-        <ModalOverlay />
-        <ModalContent bg="#2f3136" color="white">
-          <ModalHeader>Emoji</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <SimpleGrid columns={8} spacing={3}>
-              {emojiEntries.map(([name, char]) => (
-                <Box
-                  key={name}
-                  role="button"
-                  onClick={() => {
-                    insertEmoji(char);
-                    // keep modal open for multi-insert? close to emulate Discord picker
-                    closePicker();
-                    // focus back
-                    setTimeout(() => inputRef.current?.focus(), 0);
-                  }}
-                  cursor="pointer"
-                  borderRadius="6px"
-                  _hover={{ bg: "#3a3d41" }}
-                  textAlign="center"
-                  fontSize="20px"
-                  p={2}
-                >
-                  {char}
-                </Box>
-              ))}
-            </SimpleGrid>
-          </ModalBody>
-        </ModalContent>
-      </Modal>
     </Box>
   );
 }
